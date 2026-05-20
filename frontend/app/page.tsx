@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { AlertCircle, CheckCircle2, FileCheck2, LineChart, Loader2, Save, WalletCards } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, FileCheck2, LineChart, Loader2, Save, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,8 @@ type ValidationReport = {
   id: string;
   project_id: string;
   report: {
+    summary_narrative?: string | null;
+    judge_perspective?: string | null;
     issue_count: { errors: number; warnings: number; suggestions: number };
     issues: Array<{
       rule_id: string;
@@ -45,6 +47,13 @@ type ValidationReport = {
       affected_fields?: string[];
     }>;
   };
+};
+type ProjectSummary = {
+  project: Project;
+  forecast_metrics: Record<string, any>;
+  validation_issue_counts: { errors: number; warnings: number; suggestions: number };
+  summary_narrative?: string | null;
+  judge_perspective?: string | null;
 };
 
 const steps = ["Business Setup", "Revenue", "Costs", "Forecast", "Validation"];
@@ -90,6 +99,7 @@ export default function Home() {
   const [project, setProject] = useState<Project | null>(null);
   const [forecast, setForecast] = useState<ForecastOutput | null>(null);
   const [validation, setValidation] = useState<ValidationReport | null>(null);
+  const [summary, setSummary] = useState<ProjectSummary | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -134,6 +144,7 @@ export default function Home() {
     setProject(data);
     setForecast(null);
     setValidation(null);
+    setSummary(null);
     setActiveStep(1);
   }
 
@@ -185,6 +196,23 @@ export default function Home() {
       "Validation completed."
     );
     setValidation(data);
+    const latestSummary = await call<ProjectSummary>(`/projects/${project.id}/summary`);
+    setSummary(latestSummary);
+  }
+
+  async function loadSummary() {
+    if (!project) return setError("Create a project first.");
+    const data = await run(
+      "summary",
+      () => call<ProjectSummary>(`/projects/${project.id}/summary`),
+      "One-page summary loaded."
+    );
+    setSummary(data);
+  }
+
+  function downloadCsv() {
+    if (!project) return setError("Create and calculate a project first.");
+    window.open(`${API_BASE}/projects/${project.id}/export/csv`, "_blank");
   }
 
   return (
@@ -361,7 +389,16 @@ export default function Home() {
                   {busy === "validate" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
                   Run Validation
                 </Button>
+                <Button variant="outline" onClick={downloadCsv} disabled={!project || !forecast}>
+                  <Download className="h-4 w-4" />
+                  Download CSV
+                </Button>
+                <Button variant="outline" onClick={loadSummary} disabled={!project || Boolean(busy)}>
+                  {busy === "summary" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+                  Load One-page Summary
+                </Button>
                 {validation && <ValidationView validation={validation} />}
+                {summary && <SummaryView summary={summary} />}
               </CardContent>
             </Card>
           )}
@@ -470,6 +507,22 @@ function ValidationView({ validation }: { validation: ValidationReport }) {
   const report = validation.report;
   return (
     <div className="space-y-4">
+      {(report.summary_narrative || report.judge_perspective) && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {report.summary_narrative && (
+            <div className="rounded-md border border-border p-3 text-sm">
+              <p className="mb-1 font-semibold">AI summary narrative</p>
+              <p>{report.summary_narrative}</p>
+            </div>
+          )}
+          {report.judge_perspective && (
+            <div className="rounded-md border border-border p-3 text-sm">
+              <p className="mb-1 font-semibold">Judge perspective</p>
+              <p>{report.judge_perspective}</p>
+            </div>
+          )}
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-3">
         <Metric label="Errors" value={report.issue_count.errors} />
         <Metric label="Warnings" value={report.issue_count.warnings} />
@@ -492,6 +545,29 @@ function ValidationView({ validation }: { validation: ValidationReport }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SummaryView({ summary }: { summary: ProjectSummary }) {
+  return (
+    <div className="space-y-3 rounded-md border border-border p-3 text-sm">
+      <div>
+        <p className="font-semibold">One-page summary</p>
+        <p className="text-muted-foreground">{summary.project.title}</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Metric label="Total revenue" value={money(summary.forecast_metrics.total_revenue)} />
+        <Metric label="Ending cash" value={money(summary.forecast_metrics.ending_cash)} />
+        <Metric label="Runway months" value={summary.forecast_metrics.runway_months ?? "--"} />
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Metric label="Errors" value={summary.validation_issue_counts.errors} />
+        <Metric label="Warnings" value={summary.validation_issue_counts.warnings} />
+        <Metric label="Suggestions" value={summary.validation_issue_counts.suggestions} />
+      </div>
+      {summary.summary_narrative && <p>{summary.summary_narrative}</p>}
+      {summary.judge_perspective && <p className="text-muted-foreground">{summary.judge_perspective}</p>}
     </div>
   );
 }

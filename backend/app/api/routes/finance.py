@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -131,6 +131,30 @@ async def get_latest_finance_validation(project_id: str, db: AsyncSession = Depe
     if not report:
         raise not_found("Validation report")
     return ok(ValidationReportRead.model_validate(report).model_dump())
+
+
+@router.get("/{project_id}/export/csv")
+async def export_finance_csv(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    try:
+        csv_text = await finance_mvp_service.export_forecast_csv(db, project_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{project_id}_forecast.csv"'},
+    )
+
+
+@router.get("/{project_id}/summary")
+async def get_finance_summary(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    return ok(await finance_mvp_service.project_summary(db, project))
 
 
 @router.post("/{project_id}/finance/forecast", status_code=201)

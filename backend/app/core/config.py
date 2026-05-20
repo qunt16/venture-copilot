@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = ""
     EXA_API_KEY: str = ""
 
     # Auth placeholder

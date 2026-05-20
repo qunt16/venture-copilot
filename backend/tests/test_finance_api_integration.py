@@ -1,11 +1,18 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.ai.base import AIProviderError
+import app.finance.ai_narrative as ai_narrative
 from app.main import app
 
 
 @pytest.mark.asyncio
-async def test_finance_round4_calculate_validate_flow():
+async def test_finance_round4_calculate_validate_flow(monkeypatch):
+    def fail_provider(_config):
+        raise AIProviderError("openrouter disabled in test")
+
+    monkeypatch.setattr(ai_narrative, "get_provider", fail_provider)
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         project = await client.post(
             "/projects",
@@ -70,6 +77,19 @@ async def test_finance_round4_calculate_validate_flow():
         validation = await client.get(f"/projects/{project_id}/validation")
         assert validation.status_code == 200
         assert validation.json()["data"]["id"] == validation_data["id"]
+
+        csv_export = await client.get(f"/projects/{project_id}/export/csv")
+        assert csv_export.status_code == 200
+        assert "text/csv" in csv_export.headers["content-type"]
+        assert "month, new_customers".replace(" ", "")[:5] in csv_export.text.replace(" ", "")[:20]
+        assert "monthly_revenue" in csv_export.text
+
+        summary = await client.get(f"/projects/{project_id}/summary")
+        assert summary.status_code == 200
+        summary_data = summary.json()["data"]
+        assert summary_data["project"]["id"] == project_id
+        assert "total_revenue" in summary_data["forecast_metrics"]
+        assert summary_data["validation_issue_counts"]["errors"] == 0
 
         missing_config_project = await client.post(
             "/projects",

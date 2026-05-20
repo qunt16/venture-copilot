@@ -393,12 +393,66 @@ Validation:
 Remaining round:
 - Round 6: export/display polish, CSV or one-page summary, optional AI narrative if safe.
 
-**Next Step: Round 6 — Export/display polish and optional AI narrative**
+### Round 6 — Export Polish and OpenRouter AI Narrative (Completed)
+
+Completed on 2026-05-20 on branch `finance-copilot`.
+
+OpenRouter narrative layer:
+- Existing OpenRouter provider architecture was reused.
+- `OPENROUTER_API_KEY` is read from backend environment.
+- Added optional `OPENROUTER_MODEL` setting.
+- No API keys are hardcoded or committed.
+- Validation still runs deterministic `validation_engine` first.
+- AI receives only structured project context, forecast summary, validation issue counts, and existing validation issues.
+- AI is instructed not to add rule IDs, not to add issues, not to provide legal/financial advice, not to claim real market viability, and not to invent missing numbers.
+- AI may add:
+  - `summary_narrative`
+  - `judge_perspective`
+  - improved `fix_suggestion` values for existing issues only.
+- If OpenRouter is unavailable, missing, or fails, validation still succeeds with the deterministic report and no AI narrative.
+
+Export/display polish:
+- Added `GET /projects/{project_id}/export/csv`.
+- CSV returns the latest monthly forecast table as `text/csv`.
+- Added `GET /projects/{project_id}/summary`.
+- Summary returns:
+  - project info
+  - key forecast metrics
+  - validation issue counts
+  - `summary_narrative` if available
+  - `judge_perspective` if available
+
+Frontend updates:
+- Validation step now shows AI summary narrative and judge perspective when present.
+- Added CSV export button.
+- Added one-page summary loading/display section.
+- No chat interface, scenario analysis, benchmark layer, PDF, pitch deck export, or auth changes were added.
+
+Tests added/updated:
+- Validation works when OpenRouter is disabled or missing.
+- Validation still returns deterministic rule issues if AI call fails.
+- AI payload only contains existing validation issues.
+- Unknown AI-returned rule IDs are ignored and cannot add issues.
+- CSV export returns valid CSV.
+- Summary endpoint returns project, forecast metrics, issue counts, and narrative fields.
+
+Validation:
+- `docker exec venture-copilot-backend python -m compileall app` passed.
+- `docker exec -w /app venture-copilot-backend python -m pytest` passed: 22 tests.
+- `npm run lint` passed.
+- `npm run build` passed.
+
+MVP status:
+- Finance MVP Round 1-6 complete.
+- Supported business models: SaaS/subscription and service/consulting.
+- Working flow: setup -> revenue -> costs -> calculate forecast -> validate -> AI narrative fallback -> CSV/summary export.
+
+**Finance MVP Complete**
 
 Architecture is fully defined in `docs/finance/FINANCE_MVP_ARCHITECTURE.md` Section 8.
 
-Priority order:
-1. Add export/display polish for finance outputs.
-2. Add CSV or one-page summary if it fits safely.
-3. Add optional AI narrative only if it can stay grounded in deterministic validation output.
-4. Keep Round 1-5 API and frontend flow stable.
+Next possible post-MVP work:
+1. Polish visual forecast tables and add lightweight charts.
+2. Add CSV download discoverability and one-page printable summary styling.
+3. Add guarded AI narrative quality tests with real OpenRouter in a configured environment.
+4. Consider marketplace/product only after SaaS/service path is stable.

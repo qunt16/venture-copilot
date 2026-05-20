@@ -58,6 +58,8 @@ def get_provider(config: AIConfig | None) -> BaseAIProvider:
         safe_config = safe_config.model_copy(update={"api_key": SecretStr(settings.OPENAI_API_KEY)})
     if safe_config.provider == "openrouter" and not safe_config.api_key and settings.OPENROUTER_API_KEY:
         safe_config = safe_config.model_copy(update={"api_key": SecretStr(settings.OPENROUTER_API_KEY)})
+    if safe_config.provider == "openrouter" and not safe_config.model and settings.OPENROUTER_MODEL:
+        safe_config = safe_config.model_copy(update={"model": settings.OPENROUTER_MODEL})
     provider_cls = PROVIDERS.get(safe_config.provider)
     if not provider_cls:
         raise AIProviderError("Unsupported AI provider")
