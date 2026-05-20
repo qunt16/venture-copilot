@@ -28,13 +28,15 @@ def test_validation_works_when_openrouter_missing(monkeypatch):
 
     report = ai_narrative.add_ai_narrative(
         _report(),
-        project={"title": "Test", "idea_summary": "Idea"},
+        project={"title": "Test", "idea_summary": "Idea", "competition_type": "challenge_cup"},
         forecast_summary={"runway_months": 4},
         business_model="saas",
     )
 
-    assert report["summary_narrative"] is None
-    assert report["judge_perspective"] is None
+    assert report["overall_score"] == 90
+    assert report["risk_level"] == "需关注"
+    assert report["why_this_matters"]
+    assert report["judge_perspective"]
     assert [issue["rule_id"] for issue in report["issues"]] == ["CF-003"]
 
 
@@ -43,7 +45,7 @@ def test_ai_prompt_only_receives_existing_validation_issues():
 
     payload = ai_narrative.build_ai_payload(
         report=report,
-        project={"title": "Test", "idea_summary": "Idea"},
+        project={"title": "Test", "idea_summary": "Idea", "competition_type": "internet_plus"},
         forecast_summary={"runway_months": 4},
         business_model="saas",
     )
@@ -51,6 +53,8 @@ def test_ai_prompt_only_receives_existing_validation_issues():
     assert [issue["rule_id"] for issue in payload["issues"]] == ["CF-003"]
     assert "strict_rules" in payload
     assert "Do not add new issues." in payload["strict_rules"]
+    assert payload["competition_focus"] == "商业化路径、增长证据和落地能力"
+    assert "why_this_matters" in payload["output_schema"]
 
 
 def test_ai_result_cannot_add_new_issues():
@@ -60,7 +64,10 @@ def test_ai_result_cannot_add_new_issues():
         report,
         {
             "summary_narrative": "The model has a short runway and needs a clearer cash plan.",
+            "why_this_matters": "现金续航较短会影响项目持续验证能力。",
+            "top_risks": ["现金续航不足"],
             "judge_perspective": "Judges will focus on whether the team can survive long enough to validate demand.",
+            "next_actions": ["补充融资或降低早期支出。"],
             "issues": [
                 {"rule_id": "CF-003", "fix_suggestion": "Add a realistic funding event or reduce early monthly burn."},
                 {"rule_id": "REV-999", "fix_suggestion": "This should be ignored."},
@@ -72,4 +79,7 @@ def test_ai_result_cannot_add_new_issues():
     assert updated["issues"][0]["rule_id"] == "CF-003"
     assert updated["issues"][0]["fix_suggestion"] == "Add a realistic funding event or reduce early monthly burn."
     assert updated["summary_narrative"]
+    assert updated["why_this_matters"]
+    assert updated["top_risks"] == ["现金续航不足"]
     assert updated["judge_perspective"]
+    assert updated["next_actions"] == ["补充融资或降低早期支出。"]

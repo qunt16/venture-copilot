@@ -456,3 +456,40 @@ Next possible post-MVP work:
 2. Add CSV download discoverability and one-page printable summary styling.
 3. Add guarded AI narrative quality tests with real OpenRouter in a configured environment.
 4. Consider marketplace/product only after SaaS/service path is stable.
+
+### Post-MVP Interpretation Layer — Bilingual UX and Competition-Aware Insights (Completed)
+
+Completed on 2026-05-20 on branch `finance-copilot`.
+
+Scope:
+- Improved the interpretation layer without changing calculation formulas, validation rules, database schema, CRUD behavior, or API contracts.
+- Added lightweight Chinese/English frontend copy maps with Chinese as the default language.
+- Added a simple `中文 | English` toggle.
+- Translated visible finance MVP UI labels, buttons, cards, tables, validation labels, and summary labels.
+- Reworked the validation screen from raw issue-count cards into competition-oriented risk cards:
+  - 综合评分 / Overall score
+  - 风险等级 / Risk level
+  - 主要问题 / Top risks
+  - 下一步建议 / Next actions
+- Preserved the detailed deterministic validation issue list.
+
+AI narrative changes:
+- Expanded validation report enrichment to include:
+  - `overall_score`
+  - `risk_level`
+  - `why_this_matters`
+  - `top_risks`
+  - `judge_perspective`
+  - `next_actions`
+- Added deterministic fallback insights so OpenRouter failure still returns useful competition guidance.
+- Added competition-aware framing:
+  - `challenge_cup`: innovation, social value, and assumption explainability.
+  - `internet_plus`: commercialization path, growth evidence, and execution.
+  - `business_competition`: profitability, cash safety, and execution capability.
+- AI still receives only existing forecast outputs and validation issues.
+- AI is still prohibited from adding rule IDs, adding issues, changing deterministic scores/risk level, or inventing numbers.
+
+Validation expectations:
+- Frontend should feel native for Chinese university competition users by default.
+- English mode remains available as a lightweight UI toggle.
+- Incomplete or risky projects now show a clearer competition-facing interpretation rather than empty `Errors: 0 / Warnings: 0` cards.
