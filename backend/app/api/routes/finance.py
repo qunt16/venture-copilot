@@ -5,12 +5,86 @@ from app.core.database import get_db
 from app.core.errors import bad_request, not_found
 from app.core.responses import ok
 from app.schemas.finance import FinanceForecastCreate
+from app.schemas.finance_mvp import (
+    CostConfigCreate,
+    CostConfigRead,
+    ForecastOutputRead,
+    RevenueConfigCreate,
+    RevenueConfigRead,
+    ValidationReportRead,
+)
 from app.schemas.financial_assumption import FinancialAssumptionPayload
-from app.services import finance_service, financial_assumption_service, project_service
+from app.services import finance_mvp_service, finance_service, financial_assumption_service, project_service
 
 router = APIRouter()
 
 USER_ID = "demo_user"
+
+
+@router.put("/{project_id}/finance/revenue")
+async def put_revenue_config(
+    project_id: str,
+    body: RevenueConfigCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    config = await finance_mvp_service.upsert_revenue_config(db, project_id, body)
+    return ok(RevenueConfigRead.model_validate(config).model_dump())
+
+
+@router.get("/{project_id}/finance/revenue")
+async def get_revenue_config(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    config = await finance_mvp_service.get_revenue_config_model(db, project_id)
+    if not config:
+        raise not_found("Revenue config")
+    return ok(RevenueConfigRead.model_validate(config).model_dump())
+
+
+@router.put("/{project_id}/finance/costs")
+async def put_cost_config(
+    project_id: str,
+    body: CostConfigCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    config = await finance_mvp_service.upsert_cost_config(db, project_id, body)
+    return ok(CostConfigRead.model_validate(config).model_dump())
+
+
+@router.get("/{project_id}/finance/costs")
+async def get_cost_config(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    config = await finance_mvp_service.get_cost_config_model(db, project_id)
+    if not config:
+        raise not_found("Cost config")
+    return ok(CostConfigRead.model_validate(config).model_dump())
+
+
+@router.get("/{project_id}/finance/forecasts")
+async def list_forecast_outputs(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    outputs = await finance_mvp_service.list_forecast_outputs(db, project_id)
+    return ok([ForecastOutputRead.model_validate(item).model_dump() for item in outputs])
+
+
+@router.get("/{project_id}/finance/validations")
+async def list_validation_reports(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    reports = await finance_mvp_service.list_validation_reports(db, project_id)
+    return ok([ValidationReportRead.model_validate(item).model_dump() for item in reports])
 
 
 @router.post("/{project_id}/finance/forecast", status_code=201)

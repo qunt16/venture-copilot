@@ -9,6 +9,7 @@ from app.models.business_plan import BusinessPlan
 from app.models.framework_analysis import FrameworkAnalysis
 from app.models.project_review import ProjectReview
 from app.models.financial_assumption import FinancialAssumption
+from app.models.finance_mvp import CostConfig, ForecastOutput, RevenueConfig, ValidationReport
 from app.models.document_block import DocumentBlock
 from app.models.section_comment import SectionComment
 
@@ -23,6 +24,10 @@ __all__ = [
     "FrameworkAnalysis",
     "ProjectReview",
     "FinancialAssumption",
+    "RevenueConfig",
+    "CostConfig",
+    "ForecastOutput",
+    "ValidationReport",
     "DocumentBlock",
     "SectionComment",
 ]

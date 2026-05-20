@@ -15,6 +15,10 @@ async def create_project(db: AsyncSession, data: ProjectCreate, user_id: str) ->
         title=data.title,
         idea_summary=data.idea_summary,
         stage=data.stage or "idea",
+        industry=data.industry,
+        competition_type=data.competition_type,
+        business_model=data.business_model,
+        planning_horizon=data.planning_horizon,
     )
     db.add(project)
     await db.flush()
