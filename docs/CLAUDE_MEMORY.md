@@ -288,12 +288,64 @@ Remaining rounds:
 - Round 5: frontend flow.
 - Round 6: export and AI narrative polish.
 
-**Next Step: Round 4 — API integration and persistence**
+### Round 4 — API Integration and Persistence (Completed)
+
+Completed on 2026-05-20 on branch `finance-copilot`.
+
+Implemented API/service integration for the deterministic finance engines:
+- `POST /projects/{project_id}/calculate`
+  - Loads `Project`, `RevenueConfig`, and `CostConfig`.
+  - Runs `calculation_engine.calculate_forecast`.
+  - Persists a `ForecastOutput` snapshot.
+  - Returns the persisted forecast output.
+- `POST /projects/{project_id}/validate`
+  - Loads `Project`, latest `ForecastOutput`, `RevenueConfig`, and `CostConfig`.
+  - Runs `validation_engine.validate_forecast`.
+  - Persists a `ValidationReport` snapshot.
+  - Returns the persisted validation report.
+- `GET /projects/{project_id}/forecast`
+  - Returns latest `ForecastOutput`.
+- `GET /projects/{project_id}/validation`
+  - Returns latest `ValidationReport`.
+
+Service layer changes:
+- Added `finance_mvp_service.calculate_forecast`.
+- Added `finance_mvp_service.validate_forecast`.
+- Added latest snapshot helpers for `ForecastOutput` and `ValidationReport`.
+- Routes remain thin and use the existing response envelope.
+
+Persistence behavior:
+- Forecast and validation snapshots are appended as latest outputs.
+- No version-history management yet.
+- Existing list endpoints remain available:
+  - `GET /projects/{project_id}/finance/forecasts`
+  - `GET /projects/{project_id}/finance/validations`
+
+Automatic recalculation:
+- Skipped intentionally in Round 4.
+- Reason: existing `PUT /finance/revenue` and `PUT /finance/costs` return config objects; automatically returning forecast output would change the established response contract.
+- Explicit `POST /calculate` is now the safe trigger point.
+
+Tests added:
+- `backend/tests/test_finance_api_integration.py`
+- Covers create project, save revenue config, save cost config, `POST /calculate`, `POST /validate`, `GET /forecast`, `GET /validation`.
+- Covers missing config response.
+- Covers validation without forecast response.
+
+Validation:
+- `docker exec venture-copilot-backend python -m compileall app` passed.
+- `docker exec -w /app venture-copilot-backend python -m pytest` passed: 19 tests.
+
+Remaining rounds:
+- Round 5: frontend flow.
+- Round 6: export and AI narrative polish.
+
+**Next Step: Round 5 — Frontend flow**
 
 Architecture is fully defined in `docs/finance/FINANCE_MVP_ARCHITECTURE.md` Section 8.
 
 Priority order:
-1. Wire calculation and validation engines into service/API endpoints.
-2. Persist calculation output into `ForecastOutput`.
-3. Persist validation report into `ValidationReport`.
-4. Preserve existing endpoints and response envelope.
+1. Build guided setup, revenue, and cost entry flow.
+2. Call Round 4 calculate/validate endpoints.
+3. Display forecast and validation outputs clearly for student users.
+4. Preserve backend API contracts.

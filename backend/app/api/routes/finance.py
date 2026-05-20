@@ -87,6 +87,52 @@ async def list_validation_reports(project_id: str, db: AsyncSession = Depends(ge
     return ok([ValidationReportRead.model_validate(item).model_dump() for item in reports])
 
 
+@router.post("/{project_id}/calculate", status_code=201)
+async def calculate_finance_forecast(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    try:
+        forecast = await finance_mvp_service.calculate_forecast(db, project)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+    return ok(ForecastOutputRead.model_validate(forecast).model_dump())
+
+
+@router.get("/{project_id}/forecast")
+async def get_latest_finance_forecast(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    forecast = await finance_mvp_service.get_latest_forecast_output(db, project_id)
+    if not forecast:
+        raise not_found("Forecast output")
+    return ok(ForecastOutputRead.model_validate(forecast).model_dump())
+
+
+@router.post("/{project_id}/validate", status_code=201)
+async def validate_finance_forecast(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    try:
+        report = await finance_mvp_service.validate_forecast(db, project)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+    return ok(ValidationReportRead.model_validate(report).model_dump())
+
+
+@router.get("/{project_id}/validation")
+async def get_latest_finance_validation(project_id: str, db: AsyncSession = Depends(get_db)):
+    project = await project_service.get_project(db, project_id, USER_ID)
+    if not project:
+        raise not_found("Project")
+    report = await finance_mvp_service.get_latest_validation_report(db, project_id)
+    if not report:
+        raise not_found("Validation report")
+    return ok(ValidationReportRead.model_validate(report).model_dump())
+
+
 @router.post("/{project_id}/finance/forecast", status_code=201)
 async def create_forecast(
     project_id: str,
