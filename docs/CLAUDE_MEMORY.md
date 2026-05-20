@@ -169,24 +169,70 @@ Important note:
 - Requested document path `docs/finance/FINANCE_MVP_ARCHITECTURE.md` was not present in the workspace.
 - Existing `docs/FINANCE_MVP_ARCHITECTURE.md` was present but empty and untracked.
 
-**Step 2: Build the calculation engine (pure functions + unit tests)**
+### Round 2 — Deterministic Finance Calculation Engine (Completed)
+
+Completed on 2026-05-20 on branch `finance-copilot`.
+
+Implemented pure calculation logic only:
+- Added `backend/app/finance/calculation_engine.py`.
+- No database dependency.
+- No API dependency.
+- No AI dependency.
+- No frontend/export/chart changes.
+
+Calculation input:
+- Project finance setup dictionary.
+- `RevenueConfig`-style dictionary.
+- `CostConfig`-style dictionary.
+- Planning horizon: supports 12, 24, and 36 months.
+
+Supported MVP business models:
+- SaaS / subscription.
+- Service / consulting.
+
+Calculation coverage:
+- SaaS monthly active customers, new customers, churned customers, revenue, MRR, ARR, churn impact.
+- Service active clients, new clients, client growth, churn/project completion, revenue.
+- Shared fixed costs, variable costs, marketing costs, payroll/headcount costs, one-time costs.
+- Total costs, gross profit, net profit/loss, net cashflow, cumulative cash balance.
+- Gross burn, net burn, runway months, zero-cash month, break-even month.
+- Gross margin %, LTV, CAC, LTV:CAC ratio, ARPU where possible.
+- Annual revenue/net profit/gross margin summaries.
+
+Edge cases covered:
+- Division by zero returns `None` for undefined ratios.
+- Negative customers are clamped to zero.
+- Missing optional fields use safe defaults.
+- Monetary values are rounded to 2 decimals.
+- Customer/client counts are integers.
+- Zero revenue / zero cost scenarios do not crash.
+
+Tests added:
+- `backend/tests/test_calculation_engine.py`
+- SaaS revenue growth.
+- Churn behavior.
+- Cash balance calculation.
+- Runway calculation.
+- Break-even calculation.
+- Zero revenue / zero cost edge case.
+- Division by zero metrics.
+
+Validation:
+- `docker exec venture-copilot-backend python -m compileall app` passed.
+- `docker exec -w /app venture-copilot-backend python -m pytest tests/test_calculation_engine.py` passed: 7 tests.
+
+Remaining rounds:
+- Round 3: validation rules.
+- Round 4: API integration and persistence into `ForecastOutput`.
+- Round 5: frontend flow.
+- Round 6: export and AI narrative polish.
+
+**Next Step: Round 3 — Build validation rules**
 
 Architecture is fully defined in `docs/finance/FINANCE_MVP_ARCHITECTURE.md` Section 8.
 
 Priority order:
-1. Implement the 11-step calculation sequence for all 4 business model types (SaaS, marketplace, service, product)
-2. Implement edge case guards (division by zero, negative customers, missing config)
-3. Implement derived summary metrics (runway, break-even, LTV, CAC, LTV:CAC)
-4. Write unit tests for every formula — must pass before any API or UI work begins
-
-Key files to create:
-- `src/engine/calculate.ts` (or equivalent) — pure calculation function
-- `src/engine/calculate.test.ts` — unit tests
-- `src/engine/types.ts` — input/output type definitions matching Section 6 data entities
-
-**Step 3 (after calculation engine):** Build the validation rule engine (Section 9 rules)
-**Step 4 (after validation engine):** Build the REST API layer (Section 7)
-**Step 5 (after API):** Integrate Claude API for AI narrative (Section 9.3)
-**Step 6 (after API):** Build frontend input flow (Steps 1–3)
-**Step 7 (after input flow):** Build forecast output screen (Step 4)
-**Step 8 (after output screen):** Build validation + export screen (Step 5)
+1. Implement deterministic validation rules from Section 9.
+2. Keep validation separate from AI narrative.
+3. Return structured issues suitable for `ValidationReport`.
+4. Add unit tests for each rule group.
