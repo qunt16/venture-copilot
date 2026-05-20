@@ -227,12 +227,73 @@ Remaining rounds:
 - Round 5: frontend flow.
 - Round 6: export and AI narrative polish.
 
-**Next Step: Round 3 — Build validation rules**
+### Round 3 — Deterministic Validation Engine (Completed)
+
+Completed on 2026-05-20 on branch `finance-copilot`.
+
+Implemented rule-based validation only:
+- Added `backend/app/finance/validation_engine.py`.
+- No AI narrative generation.
+- No Claude/OpenAI calls.
+- No database changes.
+- No API changes.
+- No frontend/export/chart changes.
+
+Validation input:
+- Calculation engine output.
+- Project business model.
+- `RevenueConfig`-style dictionary.
+- `CostConfig`-style dictionary.
+
+Validation output is `ValidationReport`-compatible:
+- `summary_narrative: null`
+- `judge_perspective: null`
+- `issue_count.errors`
+- `issue_count.warnings`
+- `issue_count.suggestions`
+- `issues[]` with stable `rule_id`, severity, title, description, fix suggestion, affected fields.
+
+Rules implemented from Section 9.2 where supported by Round 1/2 data:
+- Cashflow: `CF-001`, `CF-002`, `CF-003`, `CF-004`, `CF-005`
+- Revenue: `REV-001`, `REV-002`, `REV-003`, `REV-004`, `REV-005`
+- Churn: `CHURN-001`, `CHURN-002`, `CHURN-003`
+- Unit economics: `UNIT-001`, `UNIT-002`, `UNIT-003`, `UNIT-004`
+- Cost completeness: `COST-001`, `COST-003`, `COST-005`
+- Margin: `MARGIN-001`, `MARGIN-003`, `MARGIN-004`
+
+Rules intentionally skipped for now:
+- `COST-002` and `MARGIN-002` because physical product models are not part of Round 2 calculation support.
+- `COST-004` because Round 1/2 do not yet provide a reliable intended-team-vs-hire-month model.
+
+Tests added:
+- `backend/tests/test_validation_engine.py`
+- Healthy model has no errors.
+- Runway under 6 months triggers `CF-003`.
+- Monthly growth over 30% triggers `REV-001`.
+- Monthly growth over 50% triggers `REV-002`.
+- Churn over 10% triggers `CHURN-001`.
+- Zero churn triggers `CHURN-003`.
+- LTV < CAC triggers `UNIT-001`.
+- LTV:CAC < 3 triggers `UNIT-002`.
+- Missing SaaS server/API cost triggers `COST-001`.
+- Negative gross margin triggers `MARGIN-003`.
+- Break-even not reached triggers `MARGIN-004`.
+
+Validation:
+- `docker exec venture-copilot-backend python -m compileall app` passed.
+- `docker exec -w /app venture-copilot-backend python -m pytest` passed: 18 tests.
+
+Remaining rounds:
+- Round 4: API integration and persistence into `ForecastOutput` / `ValidationReport`.
+- Round 5: frontend flow.
+- Round 6: export and AI narrative polish.
+
+**Next Step: Round 4 — API integration and persistence**
 
 Architecture is fully defined in `docs/finance/FINANCE_MVP_ARCHITECTURE.md` Section 8.
 
 Priority order:
-1. Implement deterministic validation rules from Section 9.
-2. Keep validation separate from AI narrative.
-3. Return structured issues suitable for `ValidationReport`.
-4. Add unit tests for each rule group.
+1. Wire calculation and validation engines into service/API endpoints.
+2. Persist calculation output into `ForecastOutput`.
+3. Persist validation report into `ValidationReport`.
+4. Preserve existing endpoints and response envelope.
