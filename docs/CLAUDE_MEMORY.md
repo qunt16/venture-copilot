@@ -340,12 +340,65 @@ Remaining rounds:
 - Round 5: frontend flow.
 - Round 6: export and AI narrative polish.
 
-**Next Step: Round 5 — Frontend flow**
+### Round 5 — Minimal Finance MVP Frontend Flow (Completed)
+
+Completed on 2026-05-20 on branch `finance-copilot`.
+
+Implemented the 5-step frontend flow from Section 3:
+- Step 1: Business Setup
+  - Startup name/title.
+  - One-line description.
+  - Business model limited to supported models: `saas`, `service`.
+  - Industry.
+  - Competition type.
+  - Planning horizon: 12, 24, 36 months.
+- Step 2: Revenue
+  - SaaS inputs: subscription price, initial customers, monthly growth rate, monthly churn rate.
+  - Service inputs: average monthly revenue per client, initial clients, monthly client growth rate, completion/churn rate.
+  - Calls `PUT /projects/{project_id}/finance/revenue`.
+- Step 3: Costs
+  - Starting cash.
+  - Fixed monthly costs.
+  - Variable cost rate.
+  - API/server cost rate.
+  - Marketing spend.
+  - Payroll/team cost.
+  - Calls `PUT /projects/{project_id}/finance/costs`.
+- Step 4: Forecast
+  - Button: Calculate Forecast.
+  - Calls `POST /projects/{project_id}/calculate`.
+  - Displays cash balance, runway months, zero-cash month, break-even month, MRR, ARR, LTV, CAC, LTV:CAC.
+  - Displays annual revenue/net profit/gross margin table.
+  - Displays first 12 months forecast table.
+- Step 5: Validation
+  - Button: Run Validation.
+  - Calls `POST /projects/{project_id}/validate`.
+  - Displays errors/warnings/suggestions counts.
+  - Displays issue list with rule ID, severity, title, description, fix suggestion, and affected fields.
+
+Frontend implementation:
+- Replaced the existing home page with a simple one-page wizard.
+- Added basic loading, success, and error states.
+- Added minimal ESLint config so `npm run lint` is non-interactive and repeatable.
+- Did not add charts, export, AI narrative, scenario comparison, auth, marketplace/product UI, or benchmark layer.
+
+Validation:
+- `npm run build` passed.
+- `npm run lint` passed.
+- `docker exec venture-copilot-backend python -m compileall app` passed.
+- `docker exec -w /app venture-copilot-backend python -m pytest` passed: 19 tests.
+- Local frontend dev server rendered the Round 5 page successfully.
+- `npm run dev` used `http://localhost:3001` because port 3000 was already occupied.
+
+Remaining round:
+- Round 6: export/display polish, CSV or one-page summary, optional AI narrative if safe.
+
+**Next Step: Round 6 — Export/display polish and optional AI narrative**
 
 Architecture is fully defined in `docs/finance/FINANCE_MVP_ARCHITECTURE.md` Section 8.
 
 Priority order:
-1. Build guided setup, revenue, and cost entry flow.
-2. Call Round 4 calculate/validate endpoints.
-3. Display forecast and validation outputs clearly for student users.
-4. Preserve backend API contracts.
+1. Add export/display polish for finance outputs.
+2. Add CSV or one-page summary if it fits safely.
+3. Add optional AI narrative only if it can stay grounded in deterministic validation output.
+4. Keep Round 1-5 API and frontend flow stable.
